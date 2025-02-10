@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/kylelemons/godebug/pretty"
-	"github.com/mitchellh/hashstructure"
+	"github.com/mitchellh/hashstructure/v2"
 
 	"k8s.io/ingress-nginx/internal/ingress/annotations/authreq"
 	"k8s.io/ingress-nginx/internal/ingress/controller/config"
@@ -104,7 +104,7 @@ func TestMergeConfigMapToStruct(t *testing.T) {
 	def.DefaultType = "text/plain"
 	def.DebugConnections = []string{"127.0.0.1", "1.1.1.1/24", "::1"}
 
-	hash, err := hashstructure.Hash(def, &hashstructure.HashOptions{
+	hash, err := hashstructure.Hash(def, hashstructure.FormatV1, &hashstructure.HashOptions{
 		TagName: "json",
 	})
 	if err != nil {
@@ -134,7 +134,7 @@ func TestMergeConfigMapToStruct(t *testing.T) {
 	def.LuaSharedDicts = defaultLuaSharedDicts
 	def.DisableIpv6DNS = true
 
-	hash, err = hashstructure.Hash(def, &hashstructure.HashOptions{
+	hash, err = hashstructure.Hash(def, hashstructure.FormatV1, &hashstructure.HashOptions{
 		TagName: "json",
 	})
 	if err != nil {
@@ -155,7 +155,7 @@ func TestMergeConfigMapToStruct(t *testing.T) {
 	def.WhitelistSourceRange = []string{"1.1.1.1/32"}
 	def.DisableIpv6DNS = true
 
-	hash, err = hashstructure.Hash(def, &hashstructure.HashOptions{
+	hash, err = hashstructure.Hash(def, hashstructure.FormatV1, &hashstructure.HashOptions{
 		TagName: "json",
 	})
 	if err != nil {
@@ -389,6 +389,11 @@ func TestLuaSharedDictsParsing(t *testing.T) {
 			name:   "custom dicts",
 			entry:  map[string]string{"lua-shared-dicts": "configuration_data:   10, my_random_dict:15 ,   another_example:2"},
 			expect: map[string]int{"configuration_data": 10240, "my_random_dict": 15360, "another_example": 2048},
+		},
+		{
+			name:   "invalid format",
+			entry:  map[string]string{"lua-shared-dicts": "mydict: 10, invalid_dict 100"},
+			expect: map[string]int{"mydict": 10240},
 		},
 		{
 			name:   "invalid size value should be ignored",

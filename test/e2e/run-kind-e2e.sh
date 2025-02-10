@@ -45,7 +45,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export TAG=1.0.0-dev
 export ARCH=${ARCH:-amd64}
 export REGISTRY=ingress-controller
-NGINX_BASE_IMAGE=$(cat "$DIR"/../../NGINX_BASE)
+NGINX_BASE_IMAGE=${NGINX_BASE_IMAGE:-$(cat "$DIR"/../../NGINX_BASE)}
 export NGINX_BASE_IMAGE=$NGINX_BASE_IMAGE
 export DOCKER_CLI_EXPERIMENTAL=enabled
 export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/kind-config-$KIND_CLUSTER_NAME}"
@@ -63,7 +63,7 @@ echo "Running e2e with nginx base image ${NGINX_BASE_IMAGE}"
 if [ "${SKIP_CLUSTER_CREATION}" = "false" ]; then
   echo "[dev-env] creating Kubernetes cluster with kind"
 
-  export K8S_VERSION=${K8S_VERSION:-v1.25.2@sha256:9be91e9e9cdf116809841fc77ebdb8845443c4c72fe5218f3ae9eb57fdb4bace}
+  export K8S_VERSION=${K8S_VERSION:-v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30}
 
   # delete the cluster if it exists
   if kind get clusters | grep "${KIND_CLUSTER_NAME}"; then
@@ -84,10 +84,10 @@ fi
 if [ "${SKIP_INGRESS_IMAGE_CREATION}" = "false" ]; then
   echo "[dev-env] building image"
   if [ "${IS_CHROOT}" = "true" ]; then
-    make -C "${DIR}"/../../ clean-image build image-chroot
+    make BASE_IMAGE="${NGINX_BASE_IMAGE}" -C "${DIR}"/../../ clean-image build image-chroot
     docker tag ${REGISTRY}/controller-chroot:${TAG} ${REGISTRY}/controller:${TAG}
   else
-    make -C "${DIR}"/../../ clean-image build image
+    make BASE_IMAGE="${NGINX_BASE_IMAGE}" -C "${DIR}"/../../ clean-image build image
   fi
 
   echo "[dev-env] .. done building controller images"
@@ -95,7 +95,7 @@ fi
 
 if [ "${SKIP_E2E_IMAGE_CREATION}" = "false" ]; then
   if ! command -v ginkgo &> /dev/null; then
-    go get github.com/onsi/ginkgo/v2/ginkgo@v2.6.1
+    go install github.com/onsi/ginkgo/v2/ginkgo@v2.22.2
   fi
 
   echo "[dev-env] .. done building controller images"

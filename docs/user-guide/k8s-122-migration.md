@@ -131,7 +131,7 @@ and add the value `spec.ingressClassName=nginx` in your Ingress objects.
 
 ## I have many ingress objects in my cluster. What should I do?
 
-If you have lot of ingress objects without ingressClass configuration,
+If you have a lot of ingress objects without ingressClass configuration,
 you can run the ingress controller with the flag `--watch-ingress-without-class=true`.
 
 ### What is the flag `--watch-ingress-without-class`?
@@ -187,59 +187,8 @@ Bear in mind that if you start Ingress-Nginx B with the command line argument `-
 4. If you start Ingress-Nginx B with the command line argument `--watch-ingress-without-class=true` and you run Ingress-Nginx A with the command line argument `--watch-ingress-without-class=false` then this is a supported configuration.
    If you have two ingress-nginx controllers for the same cluster, both running with `--watch-ingress-without-class=true` then there is likely to be a conflict.
 
-## Why am I am seeing "ingress class annotation is not equal to the expected by Ingress Controller" in my controller logs?
+## Why am I seeing "ingress class annotation is not equal to the expected by Ingress Controller" in my controller logs?
 
 It is highly likely that you will also see the name of the ingress resource in the same error message.
-This error message has been observed on use the deprecated annotation (`kubernetes.io/ingress.class`) in a Ingress resource manifest.
+This error message has been observed on use the deprecated annotation (`kubernetes.io/ingress.class`) in an Ingress resource manifest.
 It is recommended to use the `.spec.ingressClassName` field of the Ingress resource, to specify the name of the IngressClass of the Ingress you are defining.
-
-## How can I easily install multiple instances of the ingress-nginx controller in the same cluster?
-
-You can install them in different namespaces.
-
-- Create a new namespace
-  ```
-  kubectl create namespace ingress-nginx-2
-  ```
-- Use Helm to install the additional instance of the ingress controller
-- Ensure you have Helm working (refer to the [Helm documentation](https://helm.sh/docs/))
-- We have to assume that you have the helm repo for the ingress-nginx controller already added to your Helm config.
-  But, if you have not added the helm repo then you can do this to add the repo to your helm config;
-  ```
-  helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-  ```
-- Make sure you have updated the helm repo data;
-  ```
-  helm repo update
-  ```
-- Now, install an additional instance of the ingress-nginx controller like this:
-  ```
-  helm install ingress-nginx-2 ingress-nginx/ingress-nginx  \
-  --namespace ingress-nginx-2 \
-  --set controller.ingressClassResource.name=nginx-two \
-  --set controller.ingressClass=nginx-two \
-  --set controller.ingressClassResource.controllerValue="example.com/ingress-nginx-2" \
-  --set controller.ingressClassResource.enabled=true \
-  --set controller.ingressClassByName=true
-  ```
-
-If you need to install yet another instance, then repeat the procedure to create a new namespace,
-change the values such as names & namespaces (for example from "-2" to "-3"), or anything else that meets your needs.
-
-Note that `controller.ingressClassResource.name` and `controller.ingressClass` have to be set correctly.
-The first is to create the IngressClass object and the other is to modify the deployment of the actual ingress controller pod.
-
-### I can't use multiple namespaces, what should I do?
-
-If you need to install all instances in the same namespace, then you need to specify a different **election id**, like this:
-
-```
-helm install ingress-nginx-2 ingress-nginx/ingress-nginx  \
---namespace kube-system \
---set controller.electionID=nginx-two-leader \
---set controller.ingressClassResource.name=nginx-two \
---set controller.ingressClass=nginx-two \
---set controller.ingressClassResource.controllerValue="example.com/ingress-nginx-2" \
---set controller.ingressClassResource.enabled=true \
---set controller.ingressClassByName=true
-```
